@@ -12,7 +12,7 @@
 <body>
     <div class="container">
         <h1>
-            Real-time Audio Transcription and Translation
+            Real-time Audio Transcription
         </h1>
         <p class="small-caps">
             Using the <a href="https://aws.amazon.com/transcribe/">Amazon Transcribe</a> WebSocket API
@@ -35,30 +35,9 @@
                 <label>Session Token (if using MFA):</label>
                 <input type="password" id="session_token" placeholder="SESSION TOKEN" value="" />
             </div>
-        </div>
-        <div class="row">
             <div class="col">
-                <label>Source Language: </label>
-                <select id="sourceLanguage">
-                    <optgroup label="Korean">
-                        <option value="ko-KR">Korean (ko-KR)</option>
-                    </optgroup>
-                    <optgroup label="English">
-                        <option value="en-US" selected>US English (en-US)</option>
-                        <option value="en-AU">Australian English (en-AU)</option>
-                        <option value="en-GB">British English (en-GB)</option>
-                    </optgroup>
-                    <optgroup label="French">
-                        <option value="fr-CA">Canadian French (fr-CA)</option>
-                        <option value="fr-FR">French (fr-FR)</option>
-                    </optgroup>
-                    <optgroup label="Spanish">
-                        <option value="es-US">US Spanish (es-US)</option>
-                    </optgroup>
-                </select>
-
-                <label>Target Language: </label>
-                <select id="targetLanguage">
+                <label>Language: </label>
+                <select id="language">
                     <optgroup label="Korean">
                         <option value="ko-KR">Korean (ko-KR)</option>
                     </optgroup>
@@ -88,18 +67,8 @@
                 </select>
             </div>
         </div>
-        <div class="row">
-            <div class="col">
-                <div>
-                <textarea id="transcript" placeholder="Press Start and speak into your mic" rows="10" cols="50"
-                    readonly="readonly"></textarea>
-                </div>
-                <div>
-                <textarea id="translation" name="translation" rows="10" cols="50" 
-                placeholder="Translated text..." readonly="readonly"></textarea>
-                </div>
-            </div>
-        </div>
+        <textarea id="transcript" placeholder="Press Start and speak into your mic" rows="5"
+            readonly="readonly"></textarea>
         <div class="row">
             <div class="col">
                 <button id="start-button" class="button-xl" title="Start Transcription">

@@ -4,13 +4,12 @@ const v4                = require('./aws-signature-v4'); // to generate our pre-
 const marshaller        = require("@aws-sdk/eventstream-marshaller"); // for converting binary event stream messages to and from JSON
 const util_utf8_node    = require("@aws-sdk/util-utf8-node"); // utilities for encoding and decoding UTF8
 const mic               = require('microphone-stream'); // collect microphone input as a stream of raw bytes
-const AWS               = require("aws-sdk");
 
 // our converter between binary event streams messages and JSON
 const eventStreamMarshaller = new marshaller.EventStreamMarshaller(util_utf8_node.toUtf8, util_utf8_node.fromUtf8);
 
 // our global variables for managing state
-let sourceLanguageCode;
+let languageCode;
 let region;
 let sampleRate;
 let inputSampleRate;
@@ -19,8 +18,6 @@ let socket;
 let micStream;
 let socketError = false;
 let transcribeException = false;
-let translate;
-let translation = "";
 
 // check to see if the browser allows mic access
 if (!window.navigator.mediaDevices.getUserMedia) {
@@ -36,13 +33,8 @@ $('#start-button').click(function () {
     toggleStartStop(true); // disable start and enable stop button
 
     // set the language and region from the dropdowns
-    setSourceLanguage();
+    setLanguage();
     setRegion();
-
-    // Translate 를 위해서 아래 추가
-    AWS.config.credentials = new AWS.Credentials($('#access_id').val(), $('#secret_key').val());
-    AWS.config.update({"region": $('#region').find(':selected').val()});
-    translate = new AWS.Translate();
 
     // first we get the microphone input from the browser (as a promise)...
     window.navigator.mediaDevices.getUserMedia({
@@ -92,9 +84,9 @@ let streamAudioToWebSocket = function (userMediaStream) {
     wireSocketEvents();
 }
 
-function setSourceLanguage() {
-    sourceLanguageCode = $('#sourceLanguage').find(':selected').val();
-    if (sourceLanguageCode == "en-US" || sourceLanguageCode == "es-US")
+function setLanguage() {
+    languageCode = $('#language').find(':selected').val();
+    if (languageCode == "en-US" || languageCode == "es-US")
         sampleRate = 44100;
     else
         sampleRate = 8000;
@@ -148,21 +140,19 @@ let handleEventStreamMessage = function (messageJson) {
 
             // fix encoding for accented characters
             transcript = decodeURIComponent(escape(transcript));
+
             // update the textarea with the latest result
             $('#transcript').val(transcription + transcript + "\n");
-            doTranslate(transcript, false);
 
             // if this transcript segment is final, add it to the overall transcription
             if (!results[0].IsPartial) {
                 //scroll the textarea down
                 $('#transcript').scrollTop($('#transcript')[0].scrollHeight);
+
                 transcription += transcript + "\n";
-                doTranslate(transcript, true);
             }
         }
     }
-
-    // doTranslate();
 }
 
 let closeSocket = function () {
@@ -184,8 +174,6 @@ $('#stop-button').click(function () {
 $('#reset-button').click(function (){
     $('#transcript').val('');
     transcription = '';
-    $('#translation').val('');
-    translation = '';
 });
 
 function toggleStartStop(disableStart = false) {
@@ -250,54 +238,7 @@ function createPresignedUrl() {
             'protocol': 'wss',
             'expires': 15,
             'region': region,
-            'query': "language-code=" + sourceLanguageCode + "&media-encoding=pcm&sample-rate=" + sampleRate
+            'query': "language-code=" + languageCode + "&media-encoding=pcm&sample-rate=" + sampleRate
         }
     );
-}
-
-function doTranslate(text, isPartial) {
-    // console.log("Translation called.")
-    // var inputText = $('#transcript').value;
-    // console.log("inputText: " + inputText);
-    if (!text) {
-        // console.log("doTranslate doesn't work!");
-        return;
-    }
-    // console.log("transcription: " + transcription);
-
-    // get the language codes
-    let sourceLanguageCode = $('#sourceLanguage').find(':selected').val();
-    // Transcribe 은 en-US 와 같은 형식이지만 Translate 는 en, ko 라고만 해야 한다.
-    sourceLanguageCode = sourceLanguageCode.substring(0, 2);
-    // console.log("sourceLanguageCode: " + sourceLanguageCode);
-    let targetLanguageCode = $('#targetLanguage').find(':selected').val();
-    targetLanguageCode = targetLanguageCode.substring(0, 2);
-    // console.log("targetLanguageCode: " + targetLanguageCode);
-    let params = {
-        Text: text,
-        SourceLanguageCode: sourceLanguageCode,
-        TargetLanguageCode: targetLanguageCode
-    };
-
-    // let region = $('#region').find(':selected').val();
-    // console.log("region: " + region);
-    // AWS.config.credentials = new AWS.Credentials("access key", "secret key");
-    // $('#access_id').val()
-    // $('#secret_key').val()
-    // AWS.config.update({"region": region});
-
-    translate.translateText(params, function(err, data) {
-        if (err) {
-            console.log(err, err.stack);
-            alert("Error calling Amazon Translate. " + err.message);
-            return;
-        }
-        if (data) {
-            console.log("TranslatedText: " + data.TranslatedText);
-            $('#translation').val(translation + data.TranslatedText + "\n");
-            if(isPartial) {
-                translation += data.TranslatedText + "\n";
-            }
-        }
-    });
 }
